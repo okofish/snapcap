@@ -1,0 +1,20 @@
+{
+  "name": "snapcat",
+  "version": "1.0.0",
+  "description": "Save copies of snapchat stories from response captures of /loq/all_updates and /bq/stories",
+  "main": "story-decrypt.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/okofish/snapcap/"
+  },
+  "author": "Jesse Friedman <jesse@jesse.ws>",
+  "license": "MIT",
+  "dependencies": {
+    "mcrypt": "0.0.13",
+    "request": "^2.58.0",
+    "underscore": "^1.8.3"
+  }
+}
