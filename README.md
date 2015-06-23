@@ -18,5 +18,5 @@ Save copies of snapchat stories from response captures of /loq/all_updates and /
 * Can't automatically login for you
   * Snapchat made their API quite intruder-proof after the Snappening.
   * There's an unused function in the main file that's my failed attempt at login code. Feel free to try to improve it and submit a pull request.
-    * With login functionality, this code could run automatically as a cron job!
+    * With login functionality, the code could run automatically as a cron job!
 * Can't make your coffee
