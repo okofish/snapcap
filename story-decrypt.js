@@ -18,7 +18,7 @@ function b64decode(s) {
 // create snapchat token
 // see http://gibsonsec.org/snapchat/fulldisclosure/#authentication-tokens, although a bit outdated
 function create_token(auth_token, timestamp) {
-  var timestamp = timestamp ? timestamp : Math.floor(new Date());
+  var timestamp = timestamp || Math.floor(new Date());
   var secret = "iEk21fuwZApXlz93750dmW22pw389dPwOk";
   var pattern = "0001110111101110001111010101111011010001001110011000110001000110".split('');
   var hash1 = crypto.createHash('sha256').update(secret + auth_token).digest('hex').split('');
