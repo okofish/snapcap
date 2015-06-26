@@ -208,7 +208,7 @@ _.map(storiesToProcess, function(story) { // since there can be multiple media o
   }
   _.map(_.pluck(story, "story"), function(media) {
     var filepath = "./stories/" + media.username + "/" + media.id + ((media.media_type == 0) ? ".jpg" : media.zipped ? ".zip" : ".mp4")
-    if (!fs.existsSync(filepath)) { // save media file if it doesn't already exist. this allows you to use capture files with overlapping story objects without risking file loss
+    if (!(fs.existsSync(filepath) || (media.zipped && fs.existsSync(path.dirname(filepath) + "/" + path.basename(filepath,".zip"))))) { // save media file if it doesn't already exist. this allows you to use capture files with overlapping story objects without risking file loss
       try {
         saveMediaFile(media.media_url, filepath, media.media_key, media.media_iv, media.zipped)
       } catch (e) { // just in case :)
