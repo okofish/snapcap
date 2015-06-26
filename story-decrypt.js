@@ -6,10 +6,12 @@ var https = require('https');
 var querystring = require('querystring')
 var request = require('request');
 var _ = require('underscore') // underscore ftw!!!! seriously, it should be incorporated into ecmascript
-var MCrypt = require('mcrypt').MCrypt;  // we're using mcrypt because crypto doesn't fully support rijndael. aes is a subset of rijndael, but it doesn't support all of rijndael's key lengths
-var crypto = require('crypto'); // however, we're using crypto for hash generation because mcrypt doesn't have hashes :(
+var MCrypt = require('mcrypt').MCrypt; // we're using mcrypt because crypto doesn't fully support rijndael. aes is a subset of rijndael, but it doesn't support all of rijndael's key lengths
+var crypto = require('crypto'); // however, we're using crypto for hash generation because mcrypt doesn't have hashes :(              ) my editor screws with indents if i don't close that 
+var AdmZip = require('adm-zip'); // for extracting zipped videos
 
 // base64 decoder function
+
 function b64decode(s) {
   var b = new Buffer(s, 'base64');
   return b
@@ -17,6 +19,7 @@ function b64decode(s) {
 
 // create snapchat token
 // see http://gibsonsec.org/snapchat/fulldisclosure/#authentication-tokens, although a bit outdated
+
 function create_token(auth_token, timestamp) {
   var timestamp = timestamp || Math.floor(new Date());
   var secret = "iEk21fuwZApXlz93750dmW22pw389dPwOk";
@@ -35,6 +38,7 @@ function create_token(auth_token, timestamp) {
 
 // attempting to fetch dtoken param for future use
 // doesn't work
+
 function dtoken() {
   var timestamp = Math.floor(new Date());
 
@@ -79,6 +83,7 @@ function dtoken() {
 // attempting to login
 // since snapchat beefed up their api, there are a few odd parameters and headers that i can't figure out
 // doesn't work
+
 function login(username, password) {
   var timestamp = Math.floor(new Date());
   var postData = {
@@ -119,7 +124,8 @@ function login(username, password) {
 //console.log(login())
 
 // save media file locally, given url, filename, and encryption parameters
-function saveMediaFile(url, file, key, iv) {
+
+function saveMediaFile(url, file, key, iv, zipped) {
   request.get({ // send get request to fetch file
     url: url,
     encoding: 'binary'
@@ -128,33 +134,67 @@ function saveMediaFile(url, file, key, iv) {
     if (response.statusCode != 404) { // if status code is 404, then the media file has expired
       var m = new MCrypt('rijndael-128', 'cbc');
       m.open(b64decode(key), b64decode(iv)); // setting key and iv. note the b64 decode
-      var decrypted = m.decrypt(new Buffer(body, 'binary'));  // decrypt file
+      var decrypted = m.decrypt(new Buffer(body, 'binary')); // decrypt file
       fs.writeFile(file, decrypted, { // save decrypted file
         flags: 'w',
-        encoding: 'binary'  // 01100010 01101001 01101110 01100001 01110010 01111001
+        encoding: 'binary' // 01100010 01101001 01101110 01100001 01110010 01111001
       }, function(err) {
         if (err) throw err
         console.log(path.basename(file) + " saved")
+        if (zipped) {
+          
+          var zipdir = path.dirname(file) + "/" + path.basename(file,".zip");
+          if (!fs.existsSync(zipdir)) { // create zip directory if it doesn't already exist
+            fs.mkdirSync(zipdir);
+          }
+          
+          var zip = new AdmZip(file);
+          
+          zip.extractAllTo(zipdir, /*overwrite*/false);
+          
+          var extracted = fs.readdirSync(zipdir);
+          var mediaextractedQ = false
+          var overlayextractedQ = false
+          
+          extracted.forEach(function(direntry) {
+            if (direntry.indexOf('media') != -1) {
+              fs.rename(zipdir + "/" + direntry, zipdir + "/" + direntry + ".mp4")
+              console.log(path.basename(file) + " media extracted and saved")
+              mediaextractedQ = true
+            } else if (direntry.indexOf('overlay') != -1) {
+              fs.rename(zipdir + "/" + direntry, zipdir + "/" + direntry + ".png")
+              console.log(path.basename(file) + " overlay extracted and saved")
+              overlayextractedQ = true
+            }
+          });
+          
+          if (mediaextractedQ || (mediaextractedQ && overlayextractedQ)) {  // either there is just media or media and an overlay. otherwise, don't delete the zip, in case manual recovery is required. i'm taking this way too seriously
+            fs.unlinkSync(file)
+            console.log(path.basename(file) + " deleted")
+          }
+          
+        }
+          
       })
     }
   })
 }
 
 var dir = "./stories";
-if (!fs.existsSync(dir)) {  // create ./stories if it doesn't already exist
+if (!fs.existsSync(dir)) { // create ./stories if it doesn't already exist
   fs.mkdirSync(dir);
 }
 
 var cap = JSON.parse(fs.readFileSync('cap.json')) // import capture file. make sure to remove any headers from the file so it's just json
 
-var storiesToProcess  // f***ing variable scope
+var storiesToProcess // f***ing variable scope
 
 if (cap.hasOwnProperty('mature_content_text')) { // differentiate between /loq/all_updates and /bq/stories
   storiesToProcess = _.pluck(_.filter(cap.friend_stories, function(story) { // /bq/stories only has the friend_stories object
-    return !story.hasOwnProperty('ad_placement_metadata');  // only add story to list if it's not an ad!
+    return !story.hasOwnProperty('ad_placement_metadata'); // only add story to list if it's not an ad!
   }), 'stories')
 } else {
-  storiesToProcess = _.pluck(_.filter(cap.stories_response.friend_stories, function(story) {  // while /loq/all_updates has stories_response.friend_stories
+  storiesToProcess = _.pluck(_.filter(cap.stories_response.friend_stories, function(story) { // while /loq/all_updates has stories_response.friend_stories
     return !story.hasOwnProperty('ad_placement_metadata');
   }), 'stories')
 }
@@ -163,14 +203,14 @@ if (cap.hasOwnProperty('mature_content_text')) { // differentiate between /loq/a
 
 _.map(storiesToProcess, function(story) { // since there can be multiple media objects in one person's story, we use two nested maps
   var dir = "./stories/" + story[0].story.username;
-  if (!fs.existsSync(dir)) {  // create directory for the username if it doesn't already exist
+  if (!fs.existsSync(dir)) { // create directory for the username if it doesn't already exist
     fs.mkdirSync(dir);
   }
   _.map(_.pluck(story, "story"), function(media) {
     var filepath = "./stories/" + media.username + "/" + media.id + ((media.media_type == 0) ? ".jpg" : media.zipped ? ".zip" : ".mp4")
     if (!fs.existsSync(filepath)) { // save media file if it doesn't already exist. this allows you to use capture files with overlapping story objects without risking file loss
       try {
-        saveMediaFile(media.media_url, filepath, media.media_key, media.media_iv)
+        saveMediaFile(media.media_url, filepath, media.media_key, media.media_iv, media.zipped)
       } catch (e) { // just in case :)
         console.error(e)
       }

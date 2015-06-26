@@ -13,6 +13,7 @@
   "author": "Jesse Friedman <jesse@jesse.ws>",
   "license": "MIT",
   "dependencies": {
+    "adm-zip": "^0.4.7",
     "mcrypt": "0.0.13",
     "request": "^2.58.0",
     "underscore": "^1.8.3"
