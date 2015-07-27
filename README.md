@@ -5,7 +5,16 @@ Save copies of snapchat stories from response captures of /loq/all_updates and /
 
 1. Run `npm install` in the repository's folder
 2. Place a JSON dump of Snapchat's response from /loq/all_updates or /bq/stories in the folder, named `cap.json`. Make sure to remove any HTTP headers from the file.
-3. run `node story-decrypt.js`
+3. Run `node story-decrypt.js`
+
+### *Or if you're feeling adventurous...*
+
+You can now automatically capture responses using a mitmproxy script, as long as you have mitmproxy and your iOS device configured correctly:
+
+1. Set your iOS device to manual proxy, pointing towards your computer at mitmproxy's port (default 8080)
+2. Run `sh mitm.sh` in the repository's folder
+3. Putter around in Snapchat, dragging lists down to refresh, until the script says that it's done.
+4. There is no step 4.
 
 ## Features
 
